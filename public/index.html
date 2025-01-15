@@ -1,0 +1,194 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Aerolíneas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #2F4F4F;
+            color: #F0E68C;
+        }
+        .navbar {
+            background-color: #3E5C5B;
+        }
+        .navbar-brand, .nav-link {
+            color: #F0E68C !important;
+        }
+        .navbar-brand:hover, .nav-link:hover {
+            color: #BDB76B !important;
+        }
+        .container {
+            background-color: #3E5C5B;
+            padding: 30px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .btn-primary {
+            background-color: #BDB76B;
+            border-color: #BDB76B;
+        }
+        .btn-primary:hover {
+            background-color: #8B8B3A;
+            border-color: #8B8B3A;
+        }
+        .list-group-item {
+            background-color: #2F4F4F;
+            color: #F0E68C;
+        }
+        .list-group-item:hover {
+            background-color: #3E5C5B;
+        }
+        h1 {
+            color: #F0E68C;
+        }
+        .form-group input {
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+
+    
+    <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#">Aerolinea Grande</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Nosotros</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Servicios</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contactar</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+   
+    <div class="container">
+        <h1 class="text-center">Gestión de Aerolíneas</h1>
+        
+        <form id="addAerolineaForm" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="aerolineaNombre" placeholder="Nombre de la Aerolínea" required>
+                <button type="submit" class="btn btn-primary">Agregar</button>
+            </div>
+        </form>
+
+        <ul class="list-group" id="aerolineasList"></ul>
+
+        
+        <div class="modal" tabindex="-1" id="editModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar Aerolínea</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="editAerolineaNombre" placeholder="Nuevo nombre de la aerolínea">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-primary" id="saveEditBtn">Guardar cambios</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const aerolineasList = document.getElementById("aerolineasList");
+        const addAerolineaForm = document.getElementById("addAerolineaForm");
+        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        const editAerolineaNombre = document.getElementById("editAerolineaNombre");
+        const saveEditBtn = document.getElementById("saveEditBtn");
+        let editingAerolineaId = null;
+
+        
+        async function fetchAerolineas() {
+            try {
+                const res = await axios.get("/api/aerolineas");
+                aerolineasList.innerHTML = res.data.map(a => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${a.nombre}
+                        <div>
+                            <button class="btn btn-warning btn-sm" onclick="openEditModal(${a.id_aerolinea}, '${a.nombre}')">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteAerolinea(${a.id_aerolinea})">Eliminar</button>
+                        </div>
+                    </li>
+                `).join("");
+            } catch (error) {
+                alert("Error al cargar las aerolíneas.");
+            }
+        }
+
+        // Agregar nueva aerolínea
+        addAerolineaForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById("aerolineaNombre").value;
+
+            try {
+                await axios.post("/api/aerolineas", { nombre });
+                document.getElementById("aerolineaNombre").value = "";
+                fetchAerolineas();
+            } catch (error) {
+                alert("Error al agregar aerolínea.");
+            }
+        });
+
+        
+        async function deleteAerolinea(id) {
+            try {
+                await axios.delete(`/api/aerolineas/${id}`);
+                fetchAerolineas();
+            } catch (error) {
+                alert("Error al eliminar la aerolínea.");
+            }
+        }
+
+        
+        function openEditModal(id, nombre) {
+            editingAerolineaId = id;
+            editAerolineaNombre.value = nombre;
+            editModal.show();
+        }
+
+        
+        saveEditBtn.addEventListener("click", async () => {
+            const newName = editAerolineaNombre.value;
+            if (!newName) return alert("El nombre no puede estar vacío.");
+
+            try {
+                
+                await axios.put(`/api/aerolineas/${editingAerolineaId}`, { nombre: newName });
+                editModal.hide();
+                fetchAerolineas(); 
+            } catch (error) {
+                alert("Error al actualizar la aerolínea.");
+            }
+        });
+
+        
+        fetchAerolineas();
+    </script>
+</body>
+</html>
+
